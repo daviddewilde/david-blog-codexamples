@@ -205,9 +205,13 @@ df_results
 
 # COMMAND ----------
 
+sns.set(rc={'figure.figsize':(10,4)})
+sns.set_style("ticks")
 grid = sns.lineplot(data=df_results, x="interval_size", y="duration", hue='function', markers='true', marker="o")
 grid.set(xscale="log")
 grid.set(ylim=(0, None))
+grid.set(xlabel='Interval Size [s]', ylabel='Duration [s]')
+grid.yaxis.grid(True)
 
 # COMMAND ----------
 
