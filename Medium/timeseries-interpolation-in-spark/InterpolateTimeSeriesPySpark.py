@@ -68,8 +68,10 @@ df_pyspark = (
       .withColumn("NextTimestampRoundDown", F.expr(f"to_timestamp(floor(unix_timestamp(NextTimestamp)/{resample_interval})*{resample_interval})"))
       # Make sure we don't get any negative intervals (whole interval is within resample interval)
       .filter("PreviousTimestampRoundUp<=NextTimestampRoundDown")
-      # Create resampled time axis by creating all "interval" timestamps between previous and next timestamp
+      # Create resampled time axis by creating all "interval" timestamps between previous and next timestamp.
       .withColumn("Timestamp", F.expr(f"explode(sequence(PreviousTimestampRoundUp, NextTimestampRoundDown, interval {resample_interval} second)) as Timestamp"))
+      # Sequence has inclusive boundaries for both start and stop. Filter out duplicate value if original timestamp is exactly a boundary.
+      .filter("Timestamp<NextTimestamp")
       # Interpolate value between previous and next
       .selectExpr(
         "SensorId",
@@ -94,7 +96,3 @@ display(df_test.filter("SensorId = 1"))
 # COMMAND ----------
 
 display(df_pyspark.filter("sensorId=1"))
-
-# COMMAND ----------
-
-

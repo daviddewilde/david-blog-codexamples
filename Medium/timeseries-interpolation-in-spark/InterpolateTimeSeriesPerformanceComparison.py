@@ -8,7 +8,7 @@ import seaborn as sns
 
 # COMMAND ----------
 
-nsensors = 10
+nsensors = 100
 ntimestamps = 1000
 resample_interval = 10
 interval_from = '2021-01-01 00:00:00'
@@ -68,6 +68,8 @@ def interpolate_pyspark(resample_interval):
         .filter("PreviousTimestampRoundUp<=NextTimestampRoundDown")
         # Create resampled time axis by creating all "interval" timestamps between previous and next timestamp
         .withColumn("Timestamp", F.expr(f"explode(sequence(PreviousTimestampRoundUp, NextTimestampRoundDown, interval {resample_interval} second)) as Timestamp"))
+        # Sequence has inclusive boundaries for both start and stop. Filter out duplicate value if original timestamp is exactly a boundary.
+        .filter("Timestamp<NextTimestamp")
         # Interpolate value between previous and next
         .selectExpr(
           "SensorId",
@@ -79,7 +81,7 @@ def interpolate_pyspark(resample_interval):
               as Value"""
         )
   )
-  df_pyspark.count()
+  return df_pyspark.count()
 
 # COMMAND ----------
 
@@ -108,7 +110,7 @@ def resample(schema, freq, timestamp_col = "datetime",**kwargs):
 
 def interpolate_pandasudf(resample_interval):
   df_pandasudf = df_test.groupBy("SensorId").apply(resample(df_test.schema, f"{resample_interval}S", timestamp_col='Timestamp'))
-  df_pandasudf.count()
+  return df_pandasudf.count()
 
 # COMMAND ----------
 
@@ -187,7 +189,7 @@ def interpolate_pythonudf(resample_interval):
                       .drop('readtime_existent', 'readtime_ff', 'readtime_bf')\
                       .withColumnRenamed('reads_all', 'readvalue')\
                       .withColumn('Timestamp', F.from_unixtime(F.col('Timestamp')))
-  df_filled.count()
+  return df_filled.count()
 
 
 # COMMAND ----------
